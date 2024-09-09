@@ -6,6 +6,9 @@ setwd("C:/Users/dickson/Desktop/Mauki/R CLASS/Directory/r4ds/SMF")
 #install.packages("htmltools")
 #install.packages("GGally")
 #devtools::install_github("houyunhuang/ggcor")
+#install.packages("remotes")
+#remotes::install_github("Hy4m/linkET")
+library(GGally)
 library(ggplot2)
 library(ggcorrplot)
 library(igraph)
@@ -34,7 +37,6 @@ library(see)
 library(lmtest)
 library(car)
 library(data.table)
-#library(traitdataform)
 library(FD)
 library(readxl)
 library(FactoMineR)
@@ -75,11 +77,10 @@ library(lattice)
 library(permute)
 library(ggplot2)
 library(FD)
-#devtools::install_github("chavezlab/csnl")
-#install.packages(c("nlme", "lme4", "ggplot2", "htmltools"))
-#install.packages("piecewiseSEM", repos = "http://R-Forge.R-project.org")
-
-#devtools::install_github("jslefche/piecewiseSEM@devel")
+library(vegan)
+library(lattice)
+library(permute)
+###############################################
 
 #Import agregate stability data
 Agregates <- read_excel("Agregates.xlsx")
@@ -257,45 +258,6 @@ OSMF<-ggplot(dt, aes(x = Ecot, y = normalized_FluxCH4_mean, fill = Ecot)) +
 OSMF
 
 ######################################################################################################
-# analysis of variance
-anova <- aov(OSMF_index ~ factor(Management_types), data = SMF_merged_data)
-summary(anova)
-# Tukey's test and compact letter display
-Tukey <- TukeyHSD(anova)
-cld <- multcompLetters4(anova, Tukey)
-
-# Table with the mean, the standard deviation and the letters indications significant differences for each treatment
-dt <- group_by(SMF_merged_data, Management_types) %>%
-  summarise(OSMF_index_mean=mean(OSMF_index), se=sd(OSMF_index) / sqrt(n())) %>%
-  arrange(desc(OSMF_index_mean))
-cld <- as.data.frame.list(cld$`factor(Management_types)`)
-dt$Tukey <- cld$Letters
-Tukey<-dt$Tukey
-print(dt)
-
-##########
-
-OSMF2<-ggplot(dt, aes(x = Management_types, y = OSMF_index_mean, fill = Management_types)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_errorbar(aes(ymax = OSMF_index_mean + se, ymin = OSMF_index_mean - se),
-                position = position_dodge(0.9), width = 0.25) +
-  geom_text(aes(label=Tukey, y = OSMF_index_mean + se+0.03), size = 3, color = "Gray25",
-            show.legend = FALSE,
-            position = position_dodge(0.9)) +
-  ylim(0,0.6)+
-  scale_fill_manual(values = custom_palette) +  # Use scale_fill_manual for custom palette
-  theme_classic()+
-  labs(x = "", y = "Overall Soil Multifunctionality Index", title = "OVERALL SOIL MULTIFUNCTIONALITY") +
-  theme_bw()+
-  theme(axis.text.x = element_text(size = 12, color = "black"),  # X-axis text settings
-        axis.text.y = element_text(size = 12, color = "black"),  # Y-axis text settings
-        axis.title.y = element_text(size = 12, face = "bold", color = "black"), # Y-axis title settings
-        plot.title = element_text(size = 14, face = "bold", color = "black"),   # Title settings
-        axis.title.x = element_blank()) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-  guides(fill=FALSE)
-OSMF2
-
 
 # Combine normalized indicators into a data frame
 normalized_indicators <- data.frame(
@@ -388,7 +350,7 @@ write.csv(data, "SMF_merged_data.csv", row.names = FALSE)
 
 # Select relevant columns for water regulation
 water_regulation_indicators <- SMF_merged_data %>%
-  select(Clay, Sand, Silt, Mean_aggregates, `conc(N-NH4µg/gmresin)`, `conc(N-NO3µg/gmresin)`, SMF_merged_data$)
+  select(Clay, Sand, Silt, Mean_aggregates, `conc(N-NH4µg/gmresin)`, `conc(N-NO3µg/gmresin)`)
 
 # Normalize the indicators (Min-Max Normalization)
 normalize <- function(x) {
@@ -1985,14 +1947,6 @@ write.csv(ASMF_index_SEM_coef, file = "ASMF_index_SEM_coef_coef_table.csv")
 ####CORRELATION WITH THE MANTEL TEST
 #Sample analysis Kilidataset
 # Load necessary libraries
-library(dplyr)
-library(linkET)
-library(dplyr)
-library(vegan)
-library(lattice)
-library(permute)
-library(ggplot2)
-library(FD)
 #drivers<-read.csv("Plot characteristics.csv")
 #colnames(drivers)
 #columns_to_keep <- c("habitat" , "MAT","MAP","LUI", "lu1", "PS1")
