@@ -1254,6 +1254,13 @@ ggplot(Multifunctionality_forest_type, aes(y = MF, x = Stakeholder, fill = Fores
 #########################################################
 
 
+
+
+
+
+
+
+
 #### FIRST CALCULATE OVERALL SOIL MULTIFUNCTIONALITY
 
 # Select relevant columns for minOVERALL SOIL MULTIFUNCTIONALITY
@@ -1322,6 +1329,7 @@ view(normalized_Overall_Indicators_indicators)
 Overall_Indicators_SMF_index <- rowMeans(normalized_Overall_Indicators_indicators, na.rm = TRUE)
 
 # Add the indices to the original data
+normalized_Overall_Indicators_indicators$OSMF<-Overall_Indicators_SMF_index
 SMF_merged_data$OSMF_index <- Overall_Indicators_SMF_index
 plot(Overall_Indicators_SMF_index)
 # View the updated data
@@ -1432,7 +1440,115 @@ OSMF2
 
 ############################################################
 
+# List of all normalized variables
+normalized_vars <- c("normalized_Enzyme_Index", "normalized_Ammonia", "normalized_Nisotopy",
+                     "normalized_Cisotopy", "normalized_nitrate", "normalized_Decomposition_rate",
+                     "normalized_Tflux", "normalized_BS", "normalized_Carbon", 
+                     "normalized_aggregates", "normalized_NP", "normalized_CN",
+                     "normalized_Pottasium", "normalized_AWC")
 
+
+# Loop over each normalized variable and create a scatter plot vs OSMF
+# Loop over each normalized variable and create scatter plots vs OSMF
+for (var in normalized_vars) {
+  # Calculate correlation and p-value
+  cor_test <- cor.test(normalized_Overall_Indicators_indicators[[var]], 
+                       normalized_Overall_Indicators_indicators$OSMF)
+  
+  # Extract correlation (R) and p-value
+  R_value <- round(cor_test$estimate, 2)  # Correlation coefficient
+  p_value <- round(cor_test$p.value, 4)  # P-value
+  
+  # Create the plot
+  p <- ggplot(normalized_Overall_Indicators_indicators, aes_string(x = var, y = "OSMF")) +
+    geom_point(color = "blue", size = 3) +  # Scatter plot
+    geom_smooth(method = "lm", se = FALSE, color = "red", size = 1.5) +  # Thick regression line
+    theme_minimal() +  # Minimal theme for cleaner appearance
+    labs(x = var, y = "OSMF") +  # Labels for the axes
+    theme(panel.grid.major = element_line(size = 0.5),  # Thicker grid lines
+          axis.line = element_line(size = 1.2)) +  # Thicker axis lines
+    # Annotate the plot with the R and p-value
+    annotate("text", x = Inf, y = Inf, label = paste("R =", R_value, "\nP =", p_value), 
+             hjust = 1.1, vjust = 1.5, size = 5, color = "black", fontface = "bold")
+  
+  # Print each plot
+  print(p)
+}
+
+
+#########################################################
+# Load necessary libraries
+library(ggplot2)
+library(ggpubr)  # For stat_cor function (for correlation values and p-values)
+library(dplyr)
+
+# Assuming your data frame is 'normalized_Overall_Indicators_indicators'
+# Ensure 'OSMF' exists in the data frame
+
+# List of independent variables (without OSMF)
+normalized_vars <- c("normalized_Enzyme_Index", "normalized_Ammonia", "normalized_Nisotopy",
+                     "normalized_Cisotopy", "normalized_nitrate", "normalized_Decomposition_rate",
+                     "normalized_Tflux", "normalized_BS", "normalized_Carbon", 
+                     "normalized_aggregates", "normalized_NP", "normalized_CN",
+                     "normalized_Pottasium", "normalized_AWC")
+
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+
+# Assuming your data frame is 'normalized_Overall_Indicators_indicators'
+# List of independent variables (without OSMF)
+normalized_vars <- c("normalized_Enzyme_Index", "normalized_Ammonia", "normalized_Nisotopy",
+                     "normalized_Cisotopy", "normalized_nitrate", "normalized_Decomposition_rate",
+                     "normalized_Tflux", "normalized_BS", "normalized_Carbon", 
+                     "normalized_aggregates", "normalized_NP", "normalized_CN",
+                     "normalized_Pottasium", "normalized_AWC")
+
+# Create a folder to save plots
+output_folder <- "plots_output"
+if (!dir.exists(output_folder)) {
+  dir.create(output_folder)
+}
+
+# Loop over each normalized variable and create scatter plots vs OSMF
+for (var in normalized_vars) {
+  if (var %in% names(normalized_Overall_Indicators_indicators)) {
+    
+    # Calculate correlation and p-value
+    cor_test <- cor.test(normalized_Overall_Indicators_indicators[[var]], 
+                         normalized_Overall_Indicators_indicators$OSMF)
+    
+    # Extract correlation (R) and p-value
+    R_value <- round(cor_test$estimate, 2)  # Correlation coefficient
+    p_value <- round(cor_test$p.value, 4)  # P-value
+    
+    # Create the plot
+    p <- ggplot(normalized_Overall_Indicators_indicators, aes_string(x = var, y = "OSMF")) +
+      geom_point(color = "blue", size = 3) +  # Scatter plot
+      geom_smooth(method = "lm", se = FALSE, color = "red", size = 1.5) +  # Regression line
+      theme_minimal() +  # Clean appearance
+      labs(x = var, y = "OSMF") +  # Axis labels
+      theme(panel.grid.major = element_line(size = 0.5),  # Thicker grid lines
+            axis.line = element_line(size = 1.2)) +  # Thicker axis lines
+      # Annotate the plot with the R and p-value
+      annotate("text", x = Inf, y = Inf, label = paste("R =", R_value, "\nP =", p_value), 
+               hjust = 1.1, vjust = 1.5, size = 5, color = "black", fontface = "bold")
+    
+    # Define the file name for saving
+    file_name <- paste0(output_folder, "/", var, "_vs_OSMF.png")
+    
+    # Save the plot as a PNG file in high quality (300 DPI for printing quality)
+    ggsave(file_name, plot = p, width = 10, height = 8, dpi = 300, device = "png")
+  } else {
+    warning(paste("Variable", var, "is missing from the data frame. Skipping..."))
+  }
+}
+
+
+
+
+
+#####################################################
 # Select relevant columns for AGRONOMIC STAKEHOLDERS
 Agronomic_Indicators <- SMF_merged_data %>%
   select(Enzyme_Index,
@@ -1483,7 +1599,9 @@ view(normalized_Agronomic_Indicators)
 # Calculate the Mineralization Index
 Agronomic_SMF_index <- rowMeans(normalized_Agronomic_Indicators, na.rm = TRUE)
 
+normalized_Agronomic_Indicators$ASMF<-Agronomic_SMF_index
 # Add the indices to the original data
+
 SMF_merged_data$ASMF_index <- Agronomic_SMF_index
 plot(Agronomic_SMF_index)
 # View the updated data
@@ -1575,12 +1693,61 @@ ASMF2<-ggplot(dt, aes(x = Management_types, y = ASMF_index_mean, fill = Manageme
   guides(fill=FALSE)
 ASMF2
 
+#####################################################
+# List of all normalized variables
+normalized_Agronomic_Indicators <- data.frame(
+  normalized_Enzyme_Index,
+  normalized_Decomposition_rate,
+  normalized_BS,
+  normalized_Carbon,
+  normalized_NP,
+  normalized_CN,
+  normalized_Pottasium,
+  normalized_AWC
+  
+)
+normalized_vars <- c("normalized_Enzyme_Index", "normalized_Decomposition_rate",
+                     "normalized_BS", "normalized_Carbon", 
+                     "normalized_NP", "normalized_CN",
+                     "normalized_Pottasium", "normalized_AWC")
+
+
+# Loop over each normalized variable and create a scatter plot vs OSMF
+# Loop over each normalized variable and create scatter plots vs OSMF
+for (var in normalized_vars) {
+  # Calculate correlation and p-value
+  cor_test <- cor.test(normalized_Agronomic_Indicators[[var]], 
+                       normalized_Agronomic_Indicators$ASMF)
+  
+  # Extract correlation (R) and p-value
+  R_value <- round(cor_test$estimate, 2)  # Correlation coefficient
+  p_value <- round(cor_test$p.value, 4)  # P-value
+  
+  # Create the plot
+  p <- ggplot(normalized_Agronomic_Indicators, aes_string(x = var, y = "ASMF")) +
+    geom_point(color = "#2166AC", size = 3) +  # Scatter plot
+    geom_smooth(method = "lm", se = FALSE, color = "#B2182B", size = 1.5) +  # Thick regression line
+    theme_minimal() +  # Minimal theme for cleaner appearance
+    labs(x = var, y = "ASMF") +  # Labels for the axes
+    theme(panel.grid.major = element_line(size = 0.5),  # Thicker grid lines
+          axis.line = element_line(size = 1.2)) +  # Thicker axis lines
+    # Annotate the plot with the R and p-value
+    annotate("text", x = Inf, y = Inf, label = paste("R =", R_value, "\nP =", p_value), 
+             hjust = 1.1, vjust = 1.5, size = 5, color = "black", fontface = "bold")
+  
+  # Print each plot
+  print(p)
+}
+
+
+
+########################################################################
 
 # Select relevant columns for CONSERVATION  STAKEHOLDERS
 Conservation_Indicators <- SMF_merged_data %>%
   select(`conc(N-NH4µg/gmresin)`,
          `conc(N-NO3µg/gmresin)` ,
-         Decomposition_rate_yr, total_flux, SOC, Mean_aggregates)
+         Decomposition_rate_yr, total_flux, SOC, Mean_aggregates, AWC.x)
 
 # Normalize the indicators (Min-Max Normalization)
 normalize <- function(x) {
@@ -1597,7 +1764,7 @@ normalized_Tflux<- normalize(Conservation_Indicators$total_flux)
 #normalized_BS<- normalize(Agronomic_Indicators$`BS%`)
 normalized_Carbon <- normalize(Conservation_Indicators$SOC)
 normalized_aggregates<- normalize(Conservation_Indicators$Mean_aggregates)
-#normalized_NP<- normalize(Agronomic_Indicators$NP)
+normalized_AWC<- normalize(Agronomic_Indicators$AWC.x)
 #normalized_CN<- normalize(Agronomic_Indicators$CN)
 #normalized_Pottasium<- normalize(Agronomic_Indicators$`K_tot(mg/kg)`)
 
@@ -1614,7 +1781,8 @@ normalized_Conservation_Indicators <- data.frame(
   normalized_Carbon,
   normalized_Ammonia,
   normalized_nitrate,
-  normalized_Tflux
+  normalized_Tflux,
+  normalized_AWC
 )
 
 view(normalized_Conservation_Indicators)
@@ -1623,8 +1791,9 @@ view(normalized_Conservation_Indicators)
 
 # Calculate the Mineralization Index
 Conservation_SMF_index <- rowMeans(normalized_Conservation_Indicators, na.rm = TRUE)
-
+normalized_Conservation_Indicators$CSMF<-Conservation_SMF_index
 # Add the indices to the original data
+
 SMF_merged_data$CSMF_index <- Conservation_SMF_index
 plot(Conservation_SMF_index)
 # View the updated data
@@ -1713,6 +1882,52 @@ CSMF2<-ggplot(dt, aes(x = Management_types, y = CSMF_index_mean, fill = Manageme
   guides(fill=FALSE)
 CSMF2
 ############################################################################################
+# Combine normalized indicators into a data frame
+normalized_Conservation_Indicators <- data.frame(
+  normalized_Decomposition_rate,
+  normalized_Carbon,
+  normalized_Ammonia,
+  normalized_nitrate,
+  normalized_Tflux
+)
+
+view(normalized_Conservation_Indicators)
+# List of all normalized variables
+normalized_vars <- c("normalized_Ammonia",
+                     "normalized_nitrate", "normalized_Decomposition_rate",
+                     "normalized_Tflux", "normalized_Carbon", 
+                     "normalized_AWC")
+
+
+# Loop over each normalized variable and create a scatter plot vs OSMF
+# Loop over each normalized variable and create scatter plots vs OSMF
+for (var in normalized_vars) {
+  # Calculate correlation and p-value
+  cor_test <- cor.test(normalized_Conservation_Indicators[[var]], 
+                       normalized_Conservation_Indicators$CSMF)
+  
+  # Extract correlation (R) and p-value
+  R_value <- round(cor_test$estimate, 2)  # Correlation coefficient
+  p_value <- round(cor_test$p.value, 4)  # P-value
+  
+  # Create the plot
+  p <- ggplot(normalized_Conservation_Indicators, aes_string(x = var, y = "CSMF")) +
+    geom_point(color = "red", size = 3) +  # Scatter plot
+    geom_smooth(method = "lm", se = FALSE, color = "#318190", size = 1.5) +  # Thick regression line
+    theme_minimal() +  # Minimal theme for cleaner appearance
+    labs(x = var, y = "CSMF") +  # Labels for the axes
+    theme(panel.grid.major = element_line(size = 0.5),  # Thicker grid lines
+          axis.line = element_line(size = 1.2)) +  # Thicker axis lines
+    # Annotate the plot with the R and p-value
+    annotate("text", x = Inf, y = Inf, label = paste("R =", R_value, "\nP =", p_value), 
+             hjust = 1.1, vjust = 1.5, size = 5, color = "black", fontface = "bold")
+  
+  # Print each plot
+  print(p)
+}
+
+
+
 
 
 #correlation between SMF AND THE AXIS
@@ -2312,4 +2527,18 @@ ggplot(contributions_df, aes(x = MeanValue, y = Index, fill = Variable)) +
 
 
 ##########################################################################################
+
+###Climate projected scenarios
+
+p1 <- ggplot(df, aes_string(x = soil_function, y = multifunctionality_index)) +
+  geom_point(color = "blue", size = 3) +  # Scatter points
+  geom_smooth(method = "lm", se = FALSE, color = "red", size = 1.5) +  # Thick regression line
+  theme_minimal(base_size = 15) +  # Minimal theme with large text for quality
+  labs(x = "Soil Function", y = "Multifunctionality Index") +  # Axis labels
+  theme(panel.grid.major = element_line(size = 0.5),  # Thicker gridlines for clarity
+        axis.line = element_line(size = 1.2))  # Thicker axis lines for emphasis 
+
+
+
+
 
