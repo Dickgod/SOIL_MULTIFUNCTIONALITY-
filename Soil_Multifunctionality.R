@@ -1,4 +1,5 @@
 
+##MAUKI DICKSON G. 
 setwd("C:/Users/dickson/Desktop/Mauki/R CLASS/Directory/r4ds/SMF")
 #install.packages("remotes")
 #remotes::install_version("htmltools", version = "0.5.8")
