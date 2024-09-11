@@ -1,4 +1,5 @@
 
+##MAUKI DICKSON G. 
 setwd("C:/Users/dickson/Desktop/Mauki/R CLASS/Directory/r4ds/SMF")
 #install.packages("remotes")
 #remotes::install_version("htmltools", version = "0.5.8")
@@ -2307,7 +2308,7 @@ Overall_Indicators <- SMF_merged_data %>%
   select(Enzyme_Index, `conc(N-NH4µg/gmresin)`,
          `conc(N-NO3µg/gmresin)`,
          Decomposition_rate_yr, total_flux, `BS%`, SOC, Mean_aggregates, NP, CN,
-         `K_tot(mg/kg)`, `15N/14N`, `12C/13C`)
+         `K_tot(mg/kg)`, `15N/14N`, `12C/13C`, AWC.x)
 
 # Normalization of indicators
 normalized_Enzyme_Index <- normalize(Overall_Indicators$Enzyme_Index)
@@ -2322,6 +2323,7 @@ normalized_Carbon <- normalize(Overall_Indicators$SOC)
 normalized_aggregates <- normalize(Overall_Indicators$Mean_aggregates)
 normalized_NP <- normalize(Overall_Indicators$NP)
 normalized_CN <- normalize(Overall_Indicators$CN)
+normalized_AWC <- normalize(Overall_Indicators$AWC.x)
 normalized_Pottasium <- normalize(Overall_Indicators$`K_tot(mg/kg)`)
 
 # Invert indicators where necessary
@@ -2346,6 +2348,7 @@ normalized_Overall_Indicators_indicators <- data.frame(
   normalized_aggregates,
   normalized_NP,
   normalized_CN,
+  normalized_AWC,
   normalized_Pottasium
 )
 
