@@ -2359,11 +2359,89 @@ SMF_merged_data$OSMF_index <- Overall_Indicators_SMF_index
 #average_OSMF_index <- mean(SMF_merged_data$OSMF_index, na.rm = TRUE)
 ##average_OSMF_index=0.516
 # Print the average index
-print(average_OSMF_index)
+print(Overall_Indicators_SMF_index)
+
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Assuming SMF_merged_data contains a 'Land_Use' column
+# If not, add your land-use classification here
+# SMF_merged_data$Land_Use <- c(...)  # Add land use categories if not already present
+
+# Convert to long format to prepare for stacked bar plot
+normalized_Overall_Indicators_indicators$Ecosystems<-SMF_merged_data$Ecosystems
+long_data <- normalized_Overall_Indicators_indicators %>%
+  select(Ecosystems, normalized_Enzyme_Index, normalized_Ammonia, normalized_Nisotopy, 
+         normalized_Cisotopy, normalized_nitrate, normalized_Decomposition_rate, 
+         normalized_Tflux, normalized_BS, normalized_Carbon, normalized_aggregates, 
+         normalized_NP, normalized_CN, normalized_AWC, normalized_Pottasium) %>%
+  gather(key = "Indicator", value = "Value", -Ecosystems)
+
+# Summarize the data by land use and indicator
+mean_indicators <- long_data %>%
+  group_by(Ecosystems, Indicator) %>%
+  summarize(mean_value = mean(Value, na.rm = TRUE))
+
+# Load RColorBrewer for color palettes
+library(RColorBrewer)
+custom_colors <- c(
+  "#000000",  # Black (darkest) agrregate
+  "#000066",  # Dark Blue ammonia 
+  "#660000",  # Dark Red AWC
+  "#006633",  # Dark Green BS
+  "#006666",  # TealcARNBON
+  "#FF8000",  # Orange Cisotopy
+  "#990099",  # PurpleCN
+  "#00CCCC",  # Cyan dECOMPOSITION RATE
+  "#CCE5FF",  # Light BlueeNZYMES UNDEX
+  "#CCFFCC",  # Light Green n ISOTOPY
+  "#808080",  # Light Grey nITARATE
+  "#FF6666",  # Light Rednp
+  "#FFCCCC",  # Light Pink (lightest)Pottasium
+  "#FFCC00",  # Yellow T flux
+  "#00FF99",  # Mint Green
+  "#FF99CC"   # Soft Pink
+)
+
+# Plot the stacked bar graph with a color ramp using scale_fill_brewer
+#num_vars <- length(unique(long_data$Variable))
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea",
+                   "Ocotea", "Lower_Montane", "Grassland", "Homegarden", "Coffee", "Maize", "Savanna")
+
+# Convert the 'Ecosystems' column to a factor with the desired order
+mean_indicators$Ecosystems <- factor(mean_indicators$Ecosystems, levels = desired_order)
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+# Calculate the number of unique indicators to ensure the custom color palette matches
+num_vars <- length(unique(long_data$Indicator))
+custom_colors <- rep(custom_colors, length.out = num_vars)
+
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Overall Soil Multifunctionality (OSMF) across Ecosystems", 
+       x = "Ecosystems", 
+       y = "Normalized Indicator Contribution",
+       fill = "Indicators") +
+  scale_fill_manual(values= custom_colors) +  # Use 'values' to specify the color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+
+
+
+
+
 
 # Step 2: Calculate Agronomic Stakeholders Multifunctionality Index
 Agronomic_Indicators <- SMF_merged_data %>%
-  select(Enzyme_Index, Decomposition_rate_yr, `BS%`, SOC, NP, CN, `K_tot(mg/kg)`)
+  select(Enzyme_Index, Decomposition_rate_yr, `BS%`, SOC, NP, CN, `K_tot(mg/kg)`, AWC.x)
 
 # Normalize Agronomic indicators
 normalized_Enzyme_Index <- normalize(Agronomic_Indicators$Enzyme_Index)
@@ -2372,6 +2450,7 @@ normalized_BS <- normalize(Agronomic_Indicators$`BS%`)
 normalized_Carbon <- normalize(Agronomic_Indicators$SOC)
 normalized_NP <- normalize(Agronomic_Indicators$NP)
 normalized_CN <- normalize(Agronomic_Indicators$CN)
+normalized_AWC <- normalize(Agronomic_Indicators$AWC.x)
 normalized_Pottasium <- normalize(Agronomic_Indicators$`K_tot(mg/kg)`)
 
 # Combine normalized indicators for Agronomic Stakeholders
@@ -2382,14 +2461,77 @@ normalized_Agronomic_Indicators <- data.frame(
   normalized_Carbon,
   normalized_NP,
   normalized_CN,
+  normalized_AWC,
   normalized_Pottasium
 )
+
+######################################################
+
 
 # Calculate Agronomic Soil Multifunctionality Index (ASMF_index)
 Agronomic_SMF_index <- rowMeans(normalized_Agronomic_Indicators, na.rm = TRUE)
 SMF_merged_data$ASMF_index <- Agronomic_SMF_index
 #average_ASMF_index <- mean(SMF_merged_data$ASMF_index, na.rm = TRUE)
 #average_ASMF_index=0.3812
+
+####################################################################
+
+# Convert to long format to prepare for stacked bar plot
+normalized_Agronomic_Indicators$Ecosystems<-SMF_merged_data$Ecosystems
+long_data <- normalized_Agronomic_Indicators %>%
+  select(Ecosystems, normalized_Enzyme_Index, normalized_Decomposition_rate, 
+         normalized_BS, normalized_Carbon, normalized_NP, normalized_CN, normalized_AWC, normalized_Pottasium) %>%
+  gather(key = "Indicator", value = "Value", -Ecosystems)
+
+# Summarize the data by land use and indicator
+mean_indicators <- long_data %>%
+  group_by(Ecosystems, Indicator) %>%
+  summarize(mean_value = mean(Value, na.rm = TRUE))
+
+# Load RColorBrewer for color palettes
+library(RColorBrewer)
+custom_colors <- c(
+    "#CCE5FF",  # Light Blue ENZYME 
+    "#00CCCC",  # Cyan DECOMPO
+    "#006633",  # Dark Green BS  
+    "#006666",  # TealCARBON 
+    "#FF6666",  # Light Red, NP 
+    "#990099",  # Purple CN 
+    "#660000",  # Dark Red AWC  
+    "#FFCCCC" # Light Pink (lightest) POTTAS
+
+)
+
+# Plot the stacked bar graph with a color ramp using scale_fill_brewer
+#num_vars <- length(unique(long_data$Variable))
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea",
+                   "Ocotea", "Lower_Montane", "Grassland", "Homegarden", "Coffee", "Maize", "Savanna")
+
+# Convert the 'Ecosystems' column to a factor with the desired order
+mean_indicators$Ecosystems <- factor(mean_indicators$Ecosystems, levels = desired_order)
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+# Calculate the number of unique indicators to ensure the custom color palette matches
+num_vars <- length(unique(long_data$Indicator))
+custom_colors <- rep(custom_colors, length.out = num_vars)
+
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea",
+                   "Ocotea", "Lower_Montane", "Grassland", "Homegarden","Coffee", "Maize", "Savanna")
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Agronomic Soil Multifunctionality (ASMF) across Ecosystems", 
+       x = "Ecosystems", 
+       y = "Normalized Indicator Contribution",
+       fill = "Indicators") +
+  scale_fill_manual(values= custom_colors) +  # Use 'values' to specify the color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+###############################################################################################
+
+
 
 
 # Step 3: Calculate Conservation Stakeholders Multifunctionality Index
@@ -2403,6 +2545,7 @@ normalized_nitrate <- normalize(Conservation_Indicators$`conc(N-NO3µg/gmresin)`
 normalized_Decomposition_rate <- normalize(Conservation_Indicators$Decomposition_rate_yr)
 normalized_Tflux <- normalize(Conservation_Indicators$total_flux)
 normalized_Carbon <- normalize(Conservation_Indicators$SOC)
+normalized_AWC <- normalize(Agronomic_Indicators$AWC.x)
 normalized_aggregates <- normalize(Conservation_Indicators$Mean_aggregates)
 
 # Invert indicators where higher values are negative contributors
@@ -2418,7 +2561,8 @@ normalized_Conservation_Indicators <- data.frame(
   normalized_Decomposition_rate,
   normalized_Tflux,
   normalized_Carbon,
-  normalized_aggregates
+  normalized_aggregates,
+  normalized_AWC
 )
 
 # Calculate Conservation Soil Multifunctionality Index (CSMF_index)
@@ -2426,11 +2570,88 @@ Conservation_SMF_index <- rowMeans(normalized_Conservation_Indicators, na.rm = T
 SMF_merged_data$CSMF_index <- Conservation_SMF_index
 #average_CSMF_index <- mean(SMF_merged_data$CSMF_index, na.rm = TRUE)
 
-#average_CSMF_index=0.603
+###average_CSMF_index=0.603
+# Convert to long format to prepare for stacked bar plot
+  ###################################################################
+normalized_Conservation_Indicators$Ecosystems<-SMF_merged_data$Ecosystems
 
+long_data <- normalized_Conservation_Indicators %>%
+  select(Ecosystems, normalized_Ammonia,
+         normalized_nitrate,
+         normalized_Decomposition_rate,
+         normalized_Tflux,
+         normalized_Carbon,
+         normalized_aggregates,
+         normalized_AWC) %>%
+  gather(key = "Indicator", value = "Value", -Ecosystems)
+
+# Summarize the data by land use and indicator
+mean_indicators <- long_data %>%
+  group_by(Ecosystems, Indicator) %>%
+  summarize(mean_value = mean(Value, na.rm = TRUE))
+
+# Load RColorBrewer for color palettes
+library(RColorBrewer)
+custom_colors <- c(
+  "#000066",  # Dark Blue ammonia  
+  "#808080",  # Light Grey nITARATE
+  "#00CCCC",  # Cyan dECOMPOSITION RATE
+  "#FFCC00",  # Yellow T flux  
+  "#006666",  # TealcARNBON
+  "#000000",  # Black (darkest) agrregate
+  "#660000"  # Dark Red AWC
+)
+
+# Plot the stacked bar graph with a color ramp using scale_fill_brewer
+#num_vars <- length(unique(long_data$Variable))
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea",
+                   "Ocotea", "Lower_Montane", "Grassland", "Homegarden", "Coffee", "Maize", "Savanna")
+
+# Convert the 'Ecosystems' column to a factor with the desired order
+mean_indicators$Ecosystems <- factor(mean_indicators$Ecosystems, levels = desired_order)
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+# Calculate the number of unique indicators to ensure the custom color palette matches
+num_vars <- length(unique(long_data$Indicator))
+custom_colors <- rep(custom_colors, length.out = num_vars)
+
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Conservation Soil Multifunctionality (CSMF) across Ecosystems", 
+       x = "Ecosystems", 
+       y = "Normalized Indicator Contribution",
+       fill = "Indicators") +
+  scale_fill_manual(values= custom_colors) +  # Use 'values' to specify the color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+######################################################################################
 # View the updated data frame with all indices
 View(SMF_merged_data)
 #####################################
+# Define the desired order of ecosystems
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea",
+                   "Ocotea", "Lower_Montane", "Grassland", "Homegarden", "Coffee", "Maize", "Savanna")
+
+# Convert the 'Ecosystems' column to a factor with the desired order
+mean_indicators$Ecosystems <- factor(mean_indicators$Ecosystems, levels = desired_order)
+
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Agronomic Soil Multifunctionality (ASMF) across Ecosystems", 
+       x = "Ecosystems", 
+       y = "Normalized Indicator Contribution",
+       fill = "Indicators") +
+  scale_fill_manual(values= custom_colors) +  # Use 'values' to specify the color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+
+
 
 
 # Calculate total index values
