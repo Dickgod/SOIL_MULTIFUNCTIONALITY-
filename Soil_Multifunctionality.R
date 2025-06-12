@@ -399,7 +399,7 @@ write.csv(data, "Data_With_Water_Regulation_Index.csv", row.names = FALSE)
 
 # Select relevant columns for primary productivity
 primary_productivity_indicators <- SMF_merged_data %>%
-  select(SON, SOC, SPH, PH, `K_tot(mg/kg)`,Cellobiose, Glucosidase, Urease, Phosphotase, Decomposition_rate/yr
+  select(SON, SOC, SPH, PH, `K_tot(mg/kg)`,Cellobiose, Glucosidase, Urease, Phosphotase, Decomposition_rate_yr
   )
 
 # Normalize the indicators (Min-Max Normalization)
@@ -436,37 +436,37 @@ write.csv(data, "SMF_merged_data.csv", row.names = FALSE)
 ###BIODIVERSITY CONSERVATION
 
 # Select relevant columns for biodiversity conservation
-biodiversity_indicators <- data %>%
-  select(Microbial_Biomass_Carbon, Microbial_Biomass_Nitrogen, Microbial_Diversity_Index, Enzyme_Activity1, Enzyme_Activity2, Enzyme_Activity3, Enzyme_Activity4, Enzyme_Activity5, Soil_Organic_Carbon, Aggregate_Stability, Porosity, Soil_Moisture, Nitrogen_Content, Phosphorus_Content, Potassium_Content)
+#biodiversity_indicators <- data %>%
+  #select(Microbial_Biomass_Carbon, Microbial_Biomass_Nitrogen, Microbial_Diversity_Index, Enzyme_Activity1, Enzyme_Activity2, Enzyme_Activity3, Enzyme_Activity4, Enzyme_Activity5, Soil_Organic_Carbon, Aggregate_Stability, Porosity, Soil_Moisture, Nitrogen_Content, Phosphorus_Content, Potassium_Content)
 
 ###Adding data from soil earthworms
 
 # Normalize the indicators (Min-Max Normalization)
-normalize <- function(x) {
-  (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
-}
+#normalize <- function(x) {
+  #(x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+#}
 
 # Normalize biodiversity indicators
-normalized_biodiversity <- biodiversity_indicators %>%
-  mutate(across(everything(), normalize))
+#normalized_biodiversity <- biodiversity_indicators %>%
+  #mutate(across(everything(), normalize))
 
 # Invert negative contributors for biodiversity conservation (if necessary)
 # Example: If soil compaction is included, it would be a negative contributor and should be inverted
 
 # Assign weights to each indicator (assuming equal weights for this example)
-weights_biodiversity <- rep(1 / ncol(normalized_biodiversity), ncol(normalized_biodiversity))
+#weights_biodiversity <- rep(1 / ncol(normalized_biodiversity), ncol(normalized_biodiversity))
 
 # Calculate the Biodiversity Conservation Index
-biodiversity_conservation_index <- rowSums(as.matrix(normalized_biodiversity) * weights_biodiversity)
+#biodiversity_conservation_index <- rowSums(as.matrix(normalized_biodiversity) * weights_biodiversity)
 
 # Add the index to the original data
-data$Biodiversity_Conservation_Index <- biodiversity_conservation_index
+#data$Biodiversity_Conservation_Index <- biodiversity_conservation_index
 
 # View the updated data
-View(data)
+#View(data)
 
 # Optionally, write the updated data to a new CSV file
-write.csv(data, "Data_With_Biodiversity_Conservation_Index.csv", row.names = FALSE)
+#write.csv(data, "Data_With_Biodiversity_Conservation_Index.csv", row.names = FALSE)
 #####################################################################
 
 
@@ -477,7 +477,7 @@ write.csv(data, "Data_With_Biodiversity_Conservation_Index.csv", row.names = FAL
 pca_data <- SMF_merged_data %>%
   select(`15N/14N`,`12C/13C`, Cellobiose, Glucosidase, Urease, Phosphotase,`conc(N-NH4µg/gmresin)`,
          `conc(N-NO3µg/gmresin)` ,
-         Decomposition_rate_yr, FluxCO2,  FluxCH4,FluxN2O,CN, NP, `K(mmol/L)`, `BS%`,Mean_aggregates, AWC.x)
+         Decomposition_rate_yr, FluxCO2,  FluxCH4,FluxN2O,SOC,SON,SPH, `K(mmol/L)`, `BS%`,Mean_aggregates, AWC.x)
 
 
 #'conc(N-NO3µg/gmresin)', 'conc(N-NH4µg/gmresin)',
@@ -491,6 +491,8 @@ pca_data<-scale(pca_data)
 #view(pca_data)
 
 pca_result <- prcomp(pca_data, scale = TRUE)
+
+
 
 #######################
 fviz_pca_var(pca_result, col.var = "black")
@@ -558,9 +560,22 @@ colnames(env_scores) <- c("PC1", "PC2", "Variable")
 env_scores <- as.data.frame(scores(env_fit, display = "vectors"))
 env_scores <- cbind(env_scores, rownames(env_scores))
 colnames(env_scores) <- c("PC1", "PC2", "Variable")
+
+
 # Create the PCA plot with variable vectors
+quanti.sup<-Envi_data
+
+test = PCA(cbind(pca_data,quanti.sup), quanti.sup = c(20:27))
+test$ind$coord = - test$ind$coord
+test$var$coord = -test$var$coord
+test$quanti.sup$coord = -test$quanti.sup$coord
+plot(test)
+fviz_pca_biplot(test)
+
+
 # Define the desired order of Ecot levels
-desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea", "Ocotea", "Lower_Montane", "Grassland", "Homegarden","Coffee", "Maize", "Savanna")
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea", "Ocotea",
+                   "Lower_Montane", "Grassland", "Homegarden","Coffee", "Maize", "Savanna")
 
 SMF_merged_data$Ecosystems <- factor(SMF_merged_data$Ecosystems, levels = desired_order)
 
@@ -573,7 +588,75 @@ SMF_merged_data$Ecosystems <- factor(SMF_merged_data$Ecosystems, levels = desire
 
 manual_shapes <- c(21, 22, 23, 24, 25, 21, 22, 23, 24, 25, 21, 22)
 #manual_shapes <- c(0, 1, 2, 4, 5, 6, 0, 1, 2, 4, 5, 6)
-p <- autoplot(pca_result, data = SMF_merged_data,shape = "Ecosystems", fill = "Ecosystems",
+
+
+library(ggplot2)
+library(ggfortify)  # for autoplot
+
+library(factoextra)
+library(ggplot2)
+
+# Load necessary libraries
+library(factoextra)
+library(ggplot2)
+library(ggrepel)
+
+#CWM_ALL_pca <- fviz_pca_biplot(test,
+                               #repel = TRUE, # Avoid text overlap
+                               #geom = "point", # Display points
+                               #habillage = SMF_merged_data$Ecosystems, # Color by 'Ecot'
+                              # palette = custom_palette, # Use the custom palette
+                              # addEllipses = FALSE, # Remove ellipses if not needed
+                               #labelsize = 6, # Increase label size
+                               #label = "var",
+                               #col.var='black')
+
+CWM_ALL_pca <- fviz_pca_biplot(test,
+                               repel = TRUE, # Avoid text overlap
+                               geom = "point", # Display points
+                               habillage = SMF_merged_data$Ecosystems, # Color by 'Ecot'
+                               palette = custom_palette, # Use the custom palette
+                               addEllipses = FALSE, # Remove ellipses if not needed
+                               labelsize = 4, # Increase label size
+                               label = "var", # Label variables
+                               col.var = "black")+  # Set variable labels and arrows to black
+  theme_classic() + # Set the plot theme
+  geom_point(size = 3.5, aes(color = SMF_merged_data$Ecosystems, shape = SMF_merged_data$Ecosystems)) + # Increase shape size
+  scale_shape_manual(values = c("Helichrysum" = 18, "Erica" = 16, "Dist_Podocarpus" = 15,
+                                "Podocarpus" = 18, "Dist_Ocotea" = 16, "Ocotea" = 15,
+                                "Lower_Montane" = 18, "Grassland" = 16, "Homegarden" = 15,
+                                "Coffee" = 18, "Maize" = 16, "Savanna" = 15)) + # Define custom shapes
+  scale_colour_manual(values = custom_palette) +  # Use the custom color palette
+  theme(
+    text = element_text(size = 20),
+    axis.title = element_text(size = 20),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12)
+  ) +
+  labs(
+    color = "Ecosystem Types",  # Set the legend title for color
+    x = "PC1 (34.1%)",           # Set x-axis label
+    y = "PC2 (10.9%)"            # Set y-axis label
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(shape = c(18, 16, 15, 18, 16, 15, 18, 16, 15, 18, 16, 15), size = 4)),
+    shape = FALSE  # Hide the shape legend
+  ) +
+  theme(legend.position = "right") +  # Adjust legend position
+  ggtitle(NULL)  # Remove the automatic plot title
+
+# Print the plot
+CWM_ALL_pca
+# For plotting in the R environment
+options(repr.plot.width = 10, repr.plot.height = 8)
+
+CWM_ALL_pca
+# Save the plot as a PNG file with specified width and height
+ggsave(filename = "CWM_ALL_pca.png", plot = CWM_ALL_pca, 
+       width = 10, height = 8, units = "in") # width and height can be changed
+
+################################################################################
+p <- fviz_pca_biplot(test, data = SMF_merged_data,shape = "Ecosystems", fill = "Ecosystems",
               loadings = TRUE,
               loadings.label = TRUE,
               loadings.colour = "black",
@@ -599,6 +682,7 @@ p <- autoplot(pca_result, data = SMF_merged_data,shape = "Ecosystems", fill = "E
   guides(shape = guide_legend(override.aes = list(size = 3)), # Increase shape size in legend
          fill = guide_legend(override.aes = list(size = 3)))+
   geom_point(aes(shape = Ecosystems, fill = Ecosystems), size = 3)+# Ensure fill size is increased in legend+
+  
   geom_segment(data = env_scores, aes(x = 0, xend = PC1, y = 0, yend = PC2),
                arrow = arrow(length = unit(0.25, "cm")), color = "black", size = 0.8) + # Increase line thickness
   geom_text(data = env_scores, aes(x = PC1, y = PC2, label = Variable),
@@ -607,7 +691,7 @@ p <- autoplot(pca_result, data = SMF_merged_data,shape = "Ecosystems", fill = "E
 p
 ggsave("SMFPCA_Plot.png", plot = p, width = 10, height = 8)
 ##########################################################################################
-p <- autoplot(pca_result, data = SMF_merged_data,shape = "Ecosystems", fill = "Ecosystems",
+p <- fviz_pca_biplot(test, data = SMF_merged_data,shape = "Ecosystems", fill = "Ecosystems",
               loadings = TRUE,
               loadings.label = TRUE,
               loadings.colour = "black",
@@ -690,6 +774,27 @@ SMF_merged_data$PCA1 <- pca_scores_df$PC1
 SMF_merged_data$PCA2 <- pca_scores_df$PC2
 
 ##################################################################################
+##y=using test
+# Extract coordinates for PC1 and PC2 (for the individuals/observations)
+pc1_scores <- test$ind$coord[, 1]  # PC1
+pc2_scores <- test$ind$coord[, 2]  # PC2
+
+# Extract the explained variance for PC1 and PC2
+pc1_variance <- test$eig[1, 2]  # Percentage of variance explained by PC1
+pc2_variance <- test$eig[2, 2]  # Percentage of variance explained by PC2
+
+# Display PC1 and PC2 scores and variances
+print(pc1_scores)
+print(pc2_scores)
+print(pc1_variance)
+print(pc2_variance)
+
+# Merge PCA scores with your grouping data (e.g., SMF_merged_data)
+SMF_merged_data$PCA1 <- pc1_scores
+SMF_merged_data$PCA2 <- pc2_scores 
+
+########################################################
+
 # Define the desired order of Ecot levels
 desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea", "Ocotea", "Lower_Montane", "Grassland", "Homegarden","Coffee", "Maize", "Savanna")
 
@@ -1269,7 +1374,7 @@ ggplot(Multifunctionality_forest_type, aes(y = MF, x = Stakeholder, fill = Fores
 Overall_Indicators <- SMF_merged_data %>%
   select(Enzyme_Index,`conc(N-NH4µg/gmresin)`,
          `conc(N-NO3µg/gmresin)` ,
-         Decomposition_rate_yr, total_flux, `BS%`, SOC, Mean_aggregates,NP, CN,
+         Decomposition_rate_yr, total_flux, `BS%`, SOC, Mean_aggregates,SON, SPH,
          `K_tot(mg/kg)`, `15N/14N`, `12C/13C`, AWC.x)
 
 # Normalize the indicators (Min-Max Normalization)
@@ -1290,8 +1395,8 @@ normalized_Tflux<- normalize(Overall_Indicators$total_flux)
 normalized_BS<- normalize(Overall_Indicators$`BS%`)
 normalized_Carbon <- normalize(Overall_Indicators$SOC)
 normalized_aggregates<- normalize(Overall_Indicators$Mean_aggregates)
-normalized_NP<- normalize(Overall_Indicators$NP)
-normalized_CN<- normalize(Overall_Indicators$CN)
+normalized_SON<- normalize(Overall_Indicators$SON)
+normalized_SPH<- normalize(Overall_Indicators$SPH)
 normalized_Pottasium<- normalize(Overall_Indicators$`K_tot(mg/kg)`)
 normalized_AWC<- normalize(Overall_Indicators$AWC.x)
 
@@ -1316,8 +1421,8 @@ normalized_Overall_Indicators_indicators <- data.frame(
   normalized_BS,
   normalized_Carbon,
   normalized_aggregates,
-  normalized_NP,
-  normalized_CN,
+  normalized_SON,
+  normalized_SPH,
   normalized_Pottasium,
   normalized_AWC
   
@@ -1374,7 +1479,7 @@ OSMF<-ggplot(dt, aes(x = Ecosystems, y = OSMF_index_mean, fill = Ecosystems)) +
   geom_text(aes(label=Tukey, y = OSMF_index_mean + se+0.03), size = 3, color = "Gray25",
             show.legend = FALSE,
             position = position_dodge(0.9)) +
-  ylim(0,0.65)+
+  ylim(0,0.7)+
   scale_fill_manual(values = custom_palette) +  # Use scale_fill_manual for custom palette
   theme_classic()+
   labs(x = "", y = "Overall Soil Multifunctionality Index", title = "OVERALL SOIL MULTIFUNCTIONALITY") +
@@ -1445,9 +1550,8 @@ OSMF2
 normalized_vars <- c("normalized_Enzyme_Index", "normalized_Ammonia", "normalized_Nisotopy",
                      "normalized_Cisotopy", "normalized_nitrate", "normalized_Decomposition_rate",
                      "normalized_Tflux", "normalized_BS", "normalized_Carbon", 
-                     "normalized_aggregates", "normalized_NP", "normalized_CN",
+                     "normalized_aggregates", "normalized_SON", "normalized_SPH",
                      "normalized_Pottasium", "normalized_AWC")
-
 
 # Loop over each normalized variable and create a scatter plot vs OSMF
 # Loop over each normalized variable and create scatter plots vs OSMF
@@ -1490,7 +1594,7 @@ library(dplyr)
 normalized_vars <- c("normalized_Enzyme_Index", "normalized_Ammonia", "normalized_Nisotopy",
                      "normalized_Cisotopy", "normalized_nitrate", "normalized_Decomposition_rate",
                      "normalized_Tflux", "normalized_BS", "normalized_Carbon", 
-                     "normalized_aggregates", "normalized_NP", "normalized_CN",
+                     "normalized_aggregates", "normalized_SON", "normalized_SPH",
                      "normalized_Pottasium", "normalized_AWC")
 
 # Load necessary libraries
@@ -1502,58 +1606,94 @@ library(dplyr)
 normalized_vars <- c("normalized_Enzyme_Index", "normalized_Ammonia", "normalized_Nisotopy",
                      "normalized_Cisotopy", "normalized_nitrate", "normalized_Decomposition_rate",
                      "normalized_Tflux", "normalized_BS", "normalized_Carbon", 
-                     "normalized_aggregates", "normalized_NP", "normalized_CN",
+                     "normalized_aggregates", "normalized_SON", "normalized_SPH",
                      "normalized_Pottasium", "normalized_AWC")
 
-# Create a folder to save plots
-output_folder <- "plots_output"
-if (!dir.exists(output_folder)) {
-  dir.create(output_folder)
-}
-
-# Loop over each normalized variable and create scatter plots vs OSMF
-for (var in normalized_vars) {
-  if (var %in% names(normalized_Overall_Indicators_indicators)) {
-    
-    # Calculate correlation and p-value
-    cor_test <- cor.test(normalized_Overall_Indicators_indicators[[var]], 
-                         normalized_Overall_Indicators_indicators$OSMF)
-    
-    # Extract correlation (R) and p-value
-    R_value <- round(cor_test$estimate, 2)  # Correlation coefficient
-    p_value <- round(cor_test$p.value, 4)  # P-value
-    
-    # Create the plot
-    p <- ggplot(normalized_Overall_Indicators_indicators, aes_string(x = var, y = "OSMF")) +
-      geom_point(color = "blue", size = 3) +  # Scatter plot
-      geom_smooth(method = "lm", se = FALSE, color = "red", size = 1.5) +  # Regression line
-      theme_minimal() +  # Clean appearance
-      labs(x = var, y = "OSMF") +  # Axis labels
-      theme(panel.grid.major = element_line(size = 0.5),  # Thicker grid lines
-            axis.line = element_line(size = 1.2)) +  # Thicker axis lines
-      # Annotate the plot with the R and p-value
-      annotate("text", x = Inf, y = Inf, label = paste("R =", R_value, "\nP =", p_value), 
-               hjust = 1.1, vjust = 1.5, size = 5, color = "black", fontface = "bold")
-    
-    # Define the file name for saving
-    file_name <- paste0(output_folder, "/", var, "_vs_OSMF.png")
-    
-    # Save the plot as a PNG file in high quality (300 DPI for printing quality)
-    ggsave(file_name, plot = p, width = 10, height = 8, dpi = 300, device = "png")
-  } else {
-    warning(paste("Variable", var, "is missing from the data frame. Skipping..."))
-  }
-}
 
 
+# Calculate the Overall Soil Multifunctionality Index (OSMF_index)
+Overall_Indicators_SMF_index <- rowMeans(normalized_Overall_Indicators_indicators, na.rm = TRUE)
+SMF_merged_data$OSMF_index <- Overall_Indicators_SMF_index
+# Calculate the average (mean) of the OSMF_index
+#average_OSMF_index <- mean(SMF_merged_data$OSMF_index, na.rm = TRUE)
+##average_OSMF_index=0.516
+# Print the average index
+print(Overall_Indicators_SMF_index)
 
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
 
+# Assuming SMF_merged_data contains a 'Land_Use' column
+# If not, add your land-use classification here
+# SMF_merged_data$Land_Use <- c(...)  # Add land use categories if not already present
+
+# Convert to long format to prepare for stacked bar plot
+normalized_Overall_Indicators_indicators$Ecosystems<-SMF_merged_data$Ecosystems
+long_data <- normalized_Overall_Indicators_indicators %>%
+  select(Ecosystems, normalized_Enzyme_Index, normalized_Ammonia, normalized_Nisotopy, 
+         normalized_Cisotopy, normalized_nitrate, normalized_Decomposition_rate, 
+         normalized_Tflux, normalized_BS, normalized_Carbon, normalized_aggregates, 
+         normalized_SON, normalized_SPH, normalized_AWC, normalized_Pottasium) %>%
+  gather(key = "Indicator", value = "Value", -Ecosystems)
+
+# Summarize the data by land use and indicator
+mean_indicators <- long_data %>%
+  group_by(Ecosystems, Indicator) %>%
+  summarize(mean_value = mean(Value, na.rm = TRUE))
+
+# Load RColorBrewer for color palettes
+library(RColorBrewer)
+custom_colors <- c(
+  "#000000",  # Black (darkest) agrregate
+  "#000066",  # Dark Blue ammonia 
+  "#660000",  # Dark Red AWC
+  "#006633",  # Dark Green BS
+  "#006666",  # TealcARNBON
+  "#FF8000",  # Orange Cisotopy
+  "#990099",  # PurpleCN
+  "#00CCCC",  # Cyan dECOMPOSITION RATE
+  "#CCE5FF",  # Light BlueeNZYMES UNDEX
+  "#CCFFCC",  # Light Green n ISOTOPY
+  "#808080",  # Light Grey nITARATE
+  "#FF6666",  # Light Rednp
+  "#FFCCCC",  # Light Pink (lightest)Pottasium
+  "#FFCC00",  # Yellow T flux
+  "#00FF99",  # Mint Green
+  "#FF99CC"   # Soft Pink
+)
+
+# Plot the stacked bar graph with a color ramp using scale_fill_brewer
+#num_vars <- length(unique(long_data$Variable))
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+#custom_colors <- rep(custom_colors, length.out = num_vars)
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea",
+                   "Ocotea", "Lower_Montane", "Grassland", "Homegarden", "Coffee", "Maize", "Savanna")
+
+# Convert the 'Ecosystems' column to a factor with the desired order
+mean_indicators$Ecosystems <- factor(mean_indicators$Ecosystems, levels = desired_order)
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+# Calculate the number of unique indicators to ensure the custom color palette matches
+num_vars <- length(unique(long_data$Indicator))
+custom_colors <- rep(custom_colors, length.out = num_vars)
+
+# Plot the stacked bar graph with the custom color ramp using scale_fill_manual
+ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Overall Soil Multifunctionality (OSMF) across Ecosystems", 
+       x = "Ecosystems", 
+       y = "Normalized Indicator Contribution",
+       fill = "Indicators") +
+  scale_fill_manual(values= custom_colors) +  # Use 'values' to specify the color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 #####################################################
 # Select relevant columns for AGRONOMIC STAKEHOLDERS
 Agronomic_Indicators <- SMF_merged_data %>%
   select(Enzyme_Index,
-         Decomposition_rate_yr, `BS%`, SOC,NP, CN,
+         Decomposition_rate_yr, `BS%`, SOC,SON, SPH,
          `K_tot(mg/kg)`, AWC.x)
 
 # Normalize the indicators (Min-Max Normalization)
@@ -1571,8 +1711,8 @@ normalized_Decomposition_rate <- normalize(Agronomic_Indicators$Decomposition_ra
 normalized_BS<- normalize(Agronomic_Indicators$`BS%`)
 normalized_Carbon <- normalize(Agronomic_Indicators$SOC)
 #normalized_aggregates<- normalize(Agronomic_Indicators$Mean_aggregates)
-normalized_NP<- normalize(Agronomic_Indicators$NP)
-normalized_CN<- normalize(Agronomic_Indicators$CN)
+normalized_SON<- normalize(Agronomic_Indicators$SON)
+normalized_SPH<- normalize(Agronomic_Indicators$SPH)
 normalized_Pottasium<- normalize(Agronomic_Indicators$`K_tot(mg/kg)`)
 normalized_AWC<- normalize(Agronomic_Indicators$AWC.x)
 # Invert the ammonia and nitrate indicators (assuming higher values are negative contributors)
@@ -1587,8 +1727,8 @@ normalized_Agronomic_Indicators <- data.frame(
   normalized_Decomposition_rate,
   normalized_BS,
   normalized_Carbon,
-  normalized_NP,
-  normalized_CN,
+  normalized_SON,
+  normalized_SPH,
   normalized_Pottasium,
   normalized_AWC
   
@@ -1636,7 +1776,7 @@ ASMF<-ggplot(dt, aes(x = Ecosystems, y = ASMF_index_mean, fill = Ecosystems)) +
   geom_text(aes(label=Tukey, y = ASMF_index_mean + se+0.03), size = 3, color = "Gray25",
             show.legend = FALSE,
             position = position_dodge(0.9)) +
-  ylim(0,0.55)+
+  ylim(0,0.6)+
   scale_fill_manual(values = custom_palette) +  # Use scale_fill_manual for custom palette
   theme_classic()+
   labs(x = "", y = "Agronomic Soil Multifunctionality Index", title = "AGRONOMIC SOIL MULTIFUNCTIONALITY") +
@@ -1707,11 +1847,12 @@ normalized_Agronomic_Indicators <- data.frame(
   normalized_AWC
   
 )
+
+
 normalized_vars <- c("normalized_Enzyme_Index", "normalized_Decomposition_rate",
                      "normalized_BS", "normalized_Carbon", 
                      "normalized_NP", "normalized_CN",
                      "normalized_Pottasium", "normalized_AWC")
-
 
 # Loop over each normalized variable and create a scatter plot vs OSMF
 # Loop over each normalized variable and create scatter plots vs OSMF
@@ -1741,7 +1882,6 @@ for (var in normalized_vars) {
 }
 
 
-
 ########################################################################
 
 # Select relevant columns for CONSERVATION  STAKEHOLDERS
@@ -1765,7 +1905,7 @@ normalized_Tflux<- normalize(Conservation_Indicators$total_flux)
 #normalized_BS<- normalize(Agronomic_Indicators$`BS%`)
 normalized_Carbon <- normalize(Conservation_Indicators$SOC)
 normalized_aggregates<- normalize(Conservation_Indicators$Mean_aggregates)
-normalized_AWC<- normalize(Agronomic_Indicators$AWC.x)
+normalized_AWC<- normalize(Conservation_Indicators$AWC.x)
 #normalized_CN<- normalize(Agronomic_Indicators$CN)
 #normalized_Pottasium<- normalize(Agronomic_Indicators$`K_tot(mg/kg)`)
 
@@ -1792,10 +1932,10 @@ view(normalized_Conservation_Indicators)
 
 # Calculate the Mineralization Index
 Conservation_SMF_index <- rowMeans(normalized_Conservation_Indicators, na.rm = TRUE)
-normalized_Conservation_Indicators$CSMF<-Conservation_SMF_index
+normalized_Conservation_Indicators$ESMF<-Conservation_SMF_index
 # Add the indices to the original data
 
-SMF_merged_data$CSMF_index <- Conservation_SMF_index
+SMF_merged_data$ESMF_index <- Conservation_SMF_index
 plot(Conservation_SMF_index)
 # View the updated data
 View(SMF_merged_data)
@@ -1804,7 +1944,7 @@ View(SMF_merged_data)
 
 
 # analysis of variance
-anova <- aov(CSMF_index ~ factor(Ecosystems), data = SMF_merged_data)
+anova <- aov(ESMF_index ~ factor(Ecosystems), data = SMF_merged_data)
 summary(anova)
 # Tukey's test and compact letter display
 Tukey <- TukeyHSD(anova)
@@ -1812,8 +1952,8 @@ cld <- multcompLetters4(anova, Tukey)
 
 # Table with the mean, the standard deviation and the letters indications significant differences for each treatment
 dt <- group_by(SMF_merged_data, Ecosystems) %>%
-  summarise(CSMF_index_mean=mean(CSMF_index), se=sd(CSMF_index) / sqrt(n())) %>%
-  arrange(desc(CSMF_index_mean))
+  summarise(ESMF_index_mean=mean(ESMF_index), se=sd(ESMF_index) / sqrt(n())) %>%
+  arrange(desc(ESMF_index_mean))
 cld <- as.data.frame.list(cld$`factor(Ecosystems)`)
 dt$Tukey <- cld$Letters
 Tukey<-dt$Tukey
@@ -1821,17 +1961,17 @@ print(dt)
 
 ##########
 
-CSMF<-ggplot(dt, aes(x = Ecosystems, y = CSMF_index_mean, fill = Ecosystems)) +
+CSMF<-ggplot(dt, aes(x = Ecosystems, y = ESMF_index_mean, fill = Ecosystems)) +
   geom_bar(stat = "identity", position = "dodge") +
-  geom_errorbar(aes(ymax = CSMF_index_mean + se, ymin = CSMF_index_mean - se),
+  geom_errorbar(aes(ymax = ESMF_index_mean + se, ymin = ESMF_index_mean - se),
                 position = position_dodge(0.9), width = 0.25) +
-  geom_text(aes(label=Tukey, y = CSMF_index_mean + se+0.03), size = 3, color = "Gray25",
+  geom_text(aes(label=Tukey, y = ESMF_index_mean + se+0.03), size = 3, color = "Gray25",
             show.legend = FALSE,
             position = position_dodge(0.9)) +
   ylim(0,0.8)+
   scale_fill_manual(values = custom_palette) +  # Use scale_fill_manual for custom palette
   theme_classic()+
-  labs(x = "", y = "Conservation Soil Multifunctionality Index", title = "CONSERVATION SOIL MULTIFUNCTIONALITY") +
+  labs(x = "", y = "Environmentalist Soil Multifunctionality Index", title = "ENVIRONMENTALIST SOIL MULTIFUNCTIONALITY") +
   theme_bw()+
   theme(axis.text.x = element_text(size = 12, color = "black"),  # X-axis text settings
         axis.text.y = element_text(size = 12, color = "black"),  # Y-axis text settings
@@ -1843,7 +1983,7 @@ CSMF<-ggplot(dt, aes(x = Ecosystems, y = CSMF_index_mean, fill = Ecosystems)) +
 CSMF
 ############################################################################################
 # analysis of variance
-anova <- aov(CSMF_index ~ factor(Management_types), data = SMF_merged_data)
+anova <- aov(ESMF_index ~ factor(Management_types), data = SMF_merged_data)
 summary(anova)
 # Tukey's test and compact letter display
 Tukey <- TukeyHSD(anova)
@@ -1851,8 +1991,8 @@ cld <- multcompLetters4(anova, Tukey)
 
 # Table with the mean, the standard deviation and the letters indications significant differences for each treatment
 dt <- group_by(SMF_merged_data, Management_types) %>%
-  summarise(CSMF_index_mean=mean(CSMF_index), se=sd(CSMF_index) / sqrt(n())) %>%
-  arrange(desc(CSMF_index_mean))
+  summarise(ESMF_index_mean=mean(ESMF_index), se=sd(ESMF_index) / sqrt(n())) %>%
+  arrange(desc(ESMF_index_mean))
 cld <- as.data.frame.list(cld$`factor(Management_types)`)
 dt$Tukey <- cld$Letters
 Tukey<-dt$Tukey
@@ -1860,19 +2000,19 @@ print(dt)
 
 ##########
 
-CSMF2<-ggplot(dt, aes(x = Management_types, y = CSMF_index_mean, fill = Management_types)) +
+CSMF2<-ggplot(dt, aes(x = Management_types, y = ESMF_index_mean, fill = Management_types)) +
   geom_bar(stat = "identity", position = "dodge") +
-  geom_errorbar(aes(ymax = CSMF_index_mean + se, ymin = CSMF_index_mean - se),
+  geom_errorbar(aes(ymax = ESMF_index_mean + se, ymin = ESMF_index_mean - se),
                 position = position_dodge(0.9), width = 0.25) +
-  geom_text(aes(label=Tukey, y = CSMF_index_mean + se+0.03), size = 3, color = "Gray25",
+  geom_text(aes(label=Tukey, y = ESMF_index_mean + se+0.03), size = 3, color = "Gray25",
             show.legend = FALSE,
             position = position_dodge(0.9)) +
   ylim(0,0.8)+
   scale_fill_manual(values = c("Agricultural_plots" = "#92C5DE",
                                "National_parks" = "#2166AC",
-                               "Savanna_grassland" = "#B2182B"))+  # Use scale_fill_manual for custom palette
+                               "Savanna_grassland" = "#B2182B"))+  # Use scalehttp://127.0.0.1:11271/graphics/813dfd1b-eefa-4a45-b67f-e4e9eb4cd9b5.png_fill_manual for custom palette
   theme_classic()+
-  labs(x = "", y = "Conservation Soil Multifunctionality Index", title = "CONSERVATION SOIL MULTIFUNCTIONALITY") +
+  labs(x = "", y = "Environmentalist Soil Multifunctionality Index", title = "ENVIRONMENTALIST SOIL MULTIFUNCTIONALITY") +
   theme_bw()+
   theme(axis.text.x = element_text(size = 12, color = "black"),  # X-axis text settings
         axis.text.y = element_text(size = 12, color = "black"),  # Y-axis text settings
@@ -1938,7 +2078,7 @@ cor.test(soil_data$mf_agronomist, soil_data$Axis1)
 cor.test(soil_data$mf_conservationist, soil_data$Axis2)
 
 # Select five variables for correlation analysis (Replace with your chosen variables)
-selected_vars <- SMF_merged_data[, c( "OSMF_index", "ASMF_index", "CSMF_index","PCA1","PCA2")]
+selected_vars <- SMF_merged_data[, c( "OSMF_index", "ASMF_index", "ESMF_index","PCA1","PCA2")]
 
 # Compute the correlation matrix
 correlation_matrix <- cor(selected_vars, use = "complete.obs")
@@ -1972,7 +2112,7 @@ dev.off()
 ##usng rather root traits
 set.seed(221443)
 OSMF_index_SEM<-psem(
-  lm(log(OSMF_index)~MAT+MAP+Sand+ Clay+ PH+LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data),
+  lm(OSMF_index~MAT+MAP+Sand+ Clay+ PH+LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data),
   lm(LUI~MAP+MAT,data =SMF_merged_data),
   lm(Sand~MAT+MAP+LUI,data =SMF_merged_data),
   lm(Clay~MAT+MAP+LUI,data =SMF_merged_data),
@@ -2012,7 +2152,7 @@ AIC(OSMF_index_SEM)
 evaluate_model(OSMF_index_SEM)
 
 #####CHECKING THE ASSUMPTION OF NORMALITY
-A<-lm(log(OSMF_index)~MAT+MAP+Sand+ Clay+ LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data)
+A<-lm(OSMF_index~MAT+MAP+Sand+ Clay+ LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data)
 B<-lm(LUI~MAP+MAT,family=gaussian,data =SMF_merged_data)
 C<-lm(Elev~MAT+MAP+LUI,data =SMF_merged_data)
 C<-lm(Sand~MAT+MAP+LUI,data =SMF_merged_data)
@@ -2022,8 +2162,8 @@ F<-lm(PCA2_RL~MAT+MAP+LUI,data =SMF_merged_data)
 E<-lm(PCA1~MAT+MAP+LUI,data =SMF_merged_data)
 F<-lm(PCA2~MAT+MAP+LUI,data =SMF_merged_data)
 
-check_heteroscedasticity(E)
-check_normality(E)
+check_heteroscedasticity(F)
+check_normality(F)
 check_model(A)
 #########################################################################
 OSMF_index_SEM_coef<-summary(OSMF_index_SEM)$coefficients
@@ -2032,10 +2172,14 @@ OSMF_index_SEM_coef <- as.data.frame(OSMF_index_SEM_coef)
 write.csv(OSMF_index_SEM_coef, file = "OSMF_index_SEM_coef_coef_table.csv")
 
 ################################################################
-##usng rather root traits
+
+
+
+
+##ESMF
 set.seed(221443)
-CSMF_index_SEM<-psem(
-  lm(CSMF_index~MAT+MAP+Sand+ Clay+ PH+LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data),
+ESMF_index_SEM<-psem(
+  lm(ESMF_index~MAT+MAP+Sand+ Clay+ PH+LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data),
   lm(LUI~MAP+MAT,data =SMF_merged_data),
   lm(Sand~MAT+MAP+LUI,data =SMF_merged_data),
   lm(Clay~MAT+MAP+LUI,data =SMF_merged_data),
@@ -2046,14 +2190,14 @@ CSMF_index_SEM<-psem(
   lm(PCA2~MAT+MAP+LUI,data =SMF_merged_data),
   data=SMF_merged_data)
 
-summary(CSMF_index_SEM)
-fisherC(CSMF_index_SEM)
-AIC(CSMF_index_SEM)
-summary(CSMF_index_SEM, conserve = T, scale=TRUE)
+summary(ESMF_index_SEM)
+fisherC(ESMF_index_SEM)
+AIC(ESMF_index_SEM)
+summary(ESMF_index_SEM, conserve = T, scale=TRUE)
 
 ###################update model################
 
-CSMF_index_SEM<-update(CSMF_index_SEM,
+ESMF_index_SEM<-update(ESMF_index_SEM,
                        Clay%~~%Sand,
                        PH %~~%Sand,
                        PCA2_RL %~~% Sand,
@@ -2071,13 +2215,13 @@ CSMF_index_SEM<-update(CSMF_index_SEM,
                        PCA1 %~~% PCA2_RL,
                        PCA2 %~~% PCA2_RL)
 
-summary(CSMF_index_SEM)
-fisherC(CSMF_index_SEM)
-AIC(CSMF_index_SEM)
-evaluate_model(CSMF_index_SEM)
+summary(ESMF_index_SEM)
+fisherC(ESMF_index_SEM)
+AIC(ESMF_index_SEM)
+evaluate_model(ESMF_index_SEM)
 
 #####CHECKING THE ASSUMPTION OF NORMALITY
-A<-lm(CSMF_index~MAT+MAP+Sand+ Clay+ LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data)
+A<-lm(ESMF_index~MAT+MAP+Sand+ Clay+ LUI+PCA1_RL+PCA2_RL+PCA1+PCA2, data=SMF_merged_data)
 B<-lm(LUI~MAP+MAT,family=gaussian,data =SMF_merged_data)
 C<-lm(Elev~MAT+MAP+LUI,data =SMF_merged_data)
 C<-lm(Sand~MAT+MAP+LUI,data =SMF_merged_data)
@@ -2089,10 +2233,10 @@ check_heteroscedasticity(A)
 check_normality(A)
 check_model(A)
 #########################################################################
-CSMF_index_SEM_coef<-summary(CSMF_index_SEM)$coefficients
-CSMF_index_SEM_coef
-CSMF_index_SEM_coef <- as.data.frame(CSMF_index_SEM_coef)
-write.csv(CSMF_index_SEM_coef, file = "CSMF_index_SEM_coef_coef_table.csv")
+ESMF_index_SEM_coef<-summary(ESMF_index_SEM_SEM)$coefficients
+ESMF_index_SEM_coef
+ESMF_index_SEM_SEM_coef <- as.data.frame(ESMF_index_SEM_SEM_coef)
+write.csv(ESMF_index_SEM_coef, file = "ESMF_index_SEM_coef_coef_table.csv")
 #########################################################################
 
 
@@ -2307,7 +2451,7 @@ normalize <- function(x) {
 Overall_Indicators <- SMF_merged_data %>%
   select(Enzyme_Index, `conc(N-NH4µg/gmresin)`,
          `conc(N-NO3µg/gmresin)`,
-         Decomposition_rate_yr, total_flux, `BS%`, SOC, Mean_aggregates, NP, CN,
+         Decomposition_rate_yr, total_flux, `BS%`, SOC, Mean_aggregates, SON, SPH,
          `K_tot(mg/kg)`, `15N/14N`, `12C/13C`, AWC.x)
 
 # Normalization of indicators
@@ -2321,8 +2465,8 @@ normalized_Tflux <- normalize(Overall_Indicators$total_flux)
 normalized_BS <- normalize(Overall_Indicators$`BS%`)
 normalized_Carbon <- normalize(Overall_Indicators$SOC)
 normalized_aggregates <- normalize(Overall_Indicators$Mean_aggregates)
-normalized_NP <- normalize(Overall_Indicators$NP)
-normalized_CN <- normalize(Overall_Indicators$CN)
+normalized_SON <- normalize(Overall_Indicators$SON)
+normalized_SPH <- normalize(Overall_Indicators$SPH)
 normalized_AWC <- normalize(Overall_Indicators$AWC.x)
 normalized_Pottasium <- normalize(Overall_Indicators$`K_tot(mg/kg)`)
 
@@ -2346,8 +2490,8 @@ normalized_Overall_Indicators_indicators <- data.frame(
   normalized_BS,
   normalized_Carbon,
   normalized_aggregates,
-  normalized_NP,
-  normalized_CN,
+  normalized_SON,
+  normalized_SPH,
   normalized_AWC,
   normalized_Pottasium
 )
@@ -2441,15 +2585,15 @@ ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
 
 # Step 2: Calculate Agronomic Stakeholders Multifunctionality Index
 Agronomic_Indicators <- SMF_merged_data %>%
-  select(Enzyme_Index, Decomposition_rate_yr, `BS%`, SOC, NP, CN, `K_tot(mg/kg)`, AWC.x)
+  select(Enzyme_Index, Decomposition_rate_yr, `BS%`, SOC, SON, SPH, `K_tot(mg/kg)`, AWC.x)
 
 # Normalize Agronomic indicators
 normalized_Enzyme_Index <- normalize(Agronomic_Indicators$Enzyme_Index)
 normalized_Decomposition_rate <- normalize(Agronomic_Indicators$Decomposition_rate_yr)
 normalized_BS <- normalize(Agronomic_Indicators$`BS%`)
 normalized_Carbon <- normalize(Agronomic_Indicators$SOC)
-normalized_NP <- normalize(Agronomic_Indicators$NP)
-normalized_CN <- normalize(Agronomic_Indicators$CN)
+normalized_SON <- normalize(Agronomic_Indicators$SON)
+normalized_SPH <- normalize(Agronomic_Indicators$SPH)
 normalized_AWC <- normalize(Agronomic_Indicators$AWC.x)
 normalized_Pottasium <- normalize(Agronomic_Indicators$`K_tot(mg/kg)`)
 
@@ -2459,8 +2603,8 @@ normalized_Agronomic_Indicators <- data.frame(
   normalized_Decomposition_rate,
   normalized_BS,
   normalized_Carbon,
-  normalized_NP,
-  normalized_CN,
+  normalized_SON,
+  normalized_SPH,
   normalized_AWC,
   normalized_Pottasium
 )
@@ -2480,7 +2624,7 @@ SMF_merged_data$ASMF_index <- Agronomic_SMF_index
 normalized_Agronomic_Indicators$Ecosystems<-SMF_merged_data$Ecosystems
 long_data <- normalized_Agronomic_Indicators %>%
   select(Ecosystems, normalized_Enzyme_Index, normalized_Decomposition_rate, 
-         normalized_BS, normalized_Carbon, normalized_NP, normalized_CN, normalized_AWC, normalized_Pottasium) %>%
+         normalized_BS, normalized_Carbon, normalized_SON, normalized_SPH, normalized_AWC, normalized_Pottasium) %>%
   gather(key = "Indicator", value = "Value", -Ecosystems)
 
 # Summarize the data by land use and indicator
@@ -2618,7 +2762,7 @@ custom_colors <- rep(custom_colors, length.out = num_vars)
 # Plot the stacked bar graph with the custom color ramp using scale_fill_manual
 ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
   geom_bar(stat = "identity", position = "stack") +
-  labs(title = "Conservation Soil Multifunctionality (CSMF) across Ecosystems", 
+  labs(title = "Environmentalist Soil Multifunctionality (CSMF) across Ecosystems", 
        x = "Ecosystems", 
        y = "Normalized Indicator Contribution",
        fill = "Indicators") +
@@ -2649,15 +2793,10 @@ ggplot(mean_indicators, aes(x = Ecosystems, y = mean_value, fill = Indicator)) +
 
 
 
-
-
-
-
-
 # Calculate total index values
 Mean_overall_index <- mean(SMF_merged_data$OSMF_index, na.rm = TRUE)
 Mean_agronomic_index <- mean(SMF_merged_data$ASMF_index, na.rm = TRUE)
-Mean_conservation_index <- mean(SMF_merged_data$CSMF_index, na.rm = TRUE)
+Mean_conservation_index <- mean(SMF_merged_data$ESMF_index, na.rm = TRUE)
 
 # Calculate mean contributions for each index
 #mean_contributions_overall <- colSums(normalized_Overall_Indicators_indicators, na.rm = TRUE) / total_overall_index
@@ -2686,7 +2825,7 @@ contributions_df <- data.frame(
   MeanValue = c(mean_contributions_overall, mean_contributions_agronomic, mean_contributions_conservation),
   Index = c(rep("Overall SMF", length(mean_contributions_overall)),
             rep("Agronomic SMF", length(mean_contributions_agronomic)),
-            rep("Conservation SMF", length(mean_contributions_conservation)))
+            rep("Environmentalists SMF", length(mean_contributions_conservation)))
 )
 view(contributions_df)
 ###########################################################
@@ -2763,6 +2902,224 @@ p1 <- ggplot(df, aes_string(x = soil_function, y = multifunctionality_index)) +
         axis.line = element_line(size = 1.2))  # Thicker axis lines for emphasis 
 
 
+#############################################################
+##Clustering 
+library(factoextra)
+library(ggplot2)
+library(ggrepel)
+library(cluster)
+
+# Step 1: Perform PCA and handle missing/infinite values
+pca_data <- SMF_merged_data %>%
+  select(`15N/14N`, `12C/13C`, Cellobiose, Glucosidase, Urease, Phosphotase,
+         `conc(N-NH4µg/gmresin)`, `conc(N-NO3µg/gmresin)`, Decomposition_rate_yr,
+         FluxCO2, FluxCH4, FluxN2O, SOC, SON, SPH, `K(mmol/L)`, `BS%`, Mean_aggregates, AWC.x)
+
+for (col in names(pca_data)) {
+  pca_data[[col]][is.na(pca_data[[col]]) | is.infinite(pca_data[[col]])] <- median(pca_data[[col]], na.rm = TRUE)
+}
+
+# Standardize the data
+pca_data <- scale(pca_data)
+
+# Perform PCA
+pca_result <- prcomp(pca_data, center=FALSE, scale. = TRUE)
+pca_result<-prcomp(pca_data, center=FALSE, scale.=FALSE, rank. = 2) # stats::
+results <- pca_result$x
+library(clustertend)
+library(hopkins)
+
+library(factoextra)
+library(ggplot2)
+library(clustertend)
+
+# Add identifiers from SMF_merged_data to the PCA results
+desired_order <- c("Helichrysum", "Erica", "Dist_Podocarpus", "Podocarpus", "Dist_Ocotea", "Ocotea",
+                   "Lower_Montane", "Grassland", "Homegarden","Coffee", "Maize", "Savanna")
+
+SMF_merged_data$Ecosystems <- factor(SMF_merged_data$Ecosystems, levels = desired_order)
+pca_results_df <- as.data.frame(results)
+pca_results_df$PlotID <- SMF_merged_data$PlotID  # Assuming 'ID' is a column in SMF_merged_data that you want to use as labels
+pca_results_df$Ecosystem <- SMF_merged_data$Ecosystems
+# Perform K-means clustering with 2 clusters
+km2 <- eclust(pca_results_df[, 1:2], "kmeans", k = 2, hc_metric = "manhattan")
+
+# Plot the clustering results with labels from the 'ID' column
+fviz_cluster(km2, geom = "point", show.clust.cent = TRUE, 
+             pointsize = 3, labelsize = 5, 
+             palette = "jco", ggtheme = theme_minimal()) +
+  geom_text(aes(label = pca_results_df$PlotID), hjust = 1, vjust = 1.2, size = 3)
+#############################################
+
+
+
+
+
+
+
+
+
+
+
+
+# Add identifiers and ecosystem information to the PCA results
+pca_results_df <- as.data.frame(results)
+pca_results_df$PlotID <- SMF_merged_data$PlotID  # Assuming 'PlotID' is a column you want to use as labels
+pca_results_df$Ecosystems <- factor(SMF_merged_data$Ecosystems, levels = desired_order)
+
+# Perform K-means clustering with 2 clusters
+km2 <- eclust(pca_results_df[, 1:2], "kmeans", k = 2, hc_metric = "manhattan")
+
+# Define custom color palette
+custom_palette <- colorRampPalette(c("deepskyblue4", "burlywood3", "darkred"))(length(unique(SMF_merged_data$Ecosystems)))
+
+# Define manual shapes for ecosystems
+manual_shapes <- c(21, 22, 23, 24, 25, 21, 22, 23, 24, 25, 21, 22)
+
+# Plot the clustering results with customizations
+custom_cluster_plot <- fviz_cluster(km2, data = pca_results_df, 
+                                    geom = "point", 
+                                    ellipse.type = "norm", 
+                                    show.clust.cent = TRUE,
+                                    pointsize = 3, 
+                                    main = "Clustering of PCA Data with Ecosystem Info",
+                                    palette = NULL,  # Do not use default palette in fviz_cluster
+                                    ggtheme = theme_minimal()) +
+  geom_point(aes(x = pca_results_df$PC1, y = pca_results_df$PC2, 
+                 shape = pca_results_df$Ecosystems, color = pca_results_df$Ecosystems), size = 3.5) +
+  geom_text(aes(x = pca_results_df$PC1, y = pca_results_df$PC2, label = pca_results_df$PlotID), 
+            hjust = 1.2, vjust = 1.2, size = 3) +
+  scale_shape_manual(values = c("Helichrysum" = 18, "Erica" = 16, "Dist_Podocarpus" = 15,
+                                "Podocarpus" = 18, "Dist_Ocotea" = 16, "Ocotea" = 15,
+                                "Lower_Montane" = 18, "Grassland" = 16, "Homegarden" = 15,
+                                "Coffee" = 18, "Maize" = 16, "Savanna" = 15)) +
+  scale_colour_manual(values = custom_palette) +
+  theme_classic() +
+  labs(
+    title = "PCA Clustering with Custom Ecosystem Colors and Shapes",
+    color = "Ecosystem Types", 
+    shape = "Ecosystem Types"
+    #x = paste0("PC1 (", pc1_var, "%)"),
+    #y = paste0("PC2 (", pc2_var, "%)")
+  ) +
+  theme(
+    text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "right"
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 4)), 
+    shape = guide_legend(override.aes = list(size = 4))
+  )
+
+# Print the customized cluster plot
+print(custom_cluster_plot)
+
+
+########################################################
+hopkins(pca_data, n=nrow(results)-1) ### Not good results to cluster the dataset here
+
+#############################################
+
+fviz_nbclust(results, FUNcluster=kmeans, k.max = 8) 
+#Silhouette Statistic is the highest for 2  or 4 clusters.
+
+###########Making graphs
+###Two clusters 
+km2<-eclust(results, "kmeans", hc_metric="manhattan",k=2)
+
+####Four clusters 
+km4<-eclust(results, "kmeans", hc_metric="manhattan",k=3)
+
+
+
+# Step 2: K-means Clustering
+# Choose number of clusters, e.g., 3
+num_clusters <- 3
+kmeans_result <- kmeans(pca_result$x, centers = num_clusters)
+
+# Step 3: Create a PCA biplot with cluster visualization
+SMF_merged_data$Cluster <- as.factor(kmeans_result$cluster)
+
+# Define custom color palette and shapes for Ecosystems
+custom_palette <- colorRampPalette(c("deepskyblue4", "burlywood3", "darkred"))(length(unique(SMF_merged_data$Ecosystems)))
+manual_shapes <- c(21, 22, 23, 24, 25, 21, 22, 23, 24, 25, 21, 22)
+# Define custom color palette with enough colors for clusters
+num_clusters <- length(unique(SMF_merged_data$Cluster))
+custom_palette <- colorRampPalette(c("deepskyblue4", "burlywood3", "darkred"))(num_clusters)
+
+# Create the PCA biplot with clusters
+CWM_ALL_pca <- fviz_pca_biplot(pca_result, 
+                               repel = TRUE, 
+                               geom = "point", 
+                               habillage = SMF_merged_data$Cluster, # Color by clusters
+                               palette = custom_palette, 
+                               addEllipses = TRUE, # Add ellipses to visualize clusters
+                               label = "var", 
+                               col.var = "black") + 
+  theme_classic() +
+  geom_point(size = 3.5, aes(color = SMF_merged_data$Cluster, shape = SMF_merged_data$Ecosystems)) + 
+  scale_shape_manual(values = manual_shapes) + 
+  labs(
+    title = "PCA Biplot with Clustering",
+    color = "Cluster", 
+    shape = "Ecosystem Types",
+    x = paste0("PC1 (", round(pca_result$sdev[1]^2 / sum(pca_result$sdev^2) * 100, 1), "%)"),
+    y = paste0("PC2 (", round(pca_result$sdev[2]^2 / sum(pca_result$sdev^2) * 100, 1), "%)")
+  ) +
+  theme(
+    text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "right"
+  ) +
+  guides(
+    shape = guide_legend(override.aes = list(size = 3)), 
+    color = guide_legend(override.aes = list(size = 3))
+  )
+
+# Plot the final PCA biplot
+print(CWM_ALL_pca)
+
+# Create the PCA biplot with clusters
+CWM_ALL_pca <- fviz_pca_biplot(pca_result, 
+                               repel = TRUE, 
+                               geom = "point", 
+                               habillage = SMF_merged_data$Cluster, # Color by clusters
+                               palette = "jco", 
+                               addEllipses = TRUE, # Add ellipses to visualize clusters
+                               label = "var", 
+                               col.var = "black") + 
+  theme_classic() +
+  geom_point(size = 3.5, aes(color = SMF_merged_data$Cluster, shape = SMF_merged_data$Ecosystems)) + 
+  scale_shape_manual(values = manual_shapes) + 
+  labs(
+    title = "PCA Biplot with Clustering",
+    color = "Cluster", 
+    shape = "Ecosystem Types",
+    x = paste0("PC1 (", round(pca_result$sdev[1]^2 / sum(pca_result$sdev^2) * 100, 1), "%)"),
+    y = paste0("PC2 (", round(pca_result$sdev[2]^2 / sum(pca_result$sdev^2) * 100, 1), "%)")
+  ) +
+  theme(
+    text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "right"
+  ) +
+  guides(
+    shape = guide_legend(override.aes = list(size = 3)), 
+    color = guide_legend(override.aes = list(size = 3))
+  )
+
+# Step 4: Plot the final PCA biplot
+print(CWM_ALL_pca)
+
+# Step 5: Save the plot
+ggsave("CWM_ALL_pca_clustering.png", plot = CWM_ALL_pca, width = 10, height = 8, units = "in")
 
 
 
